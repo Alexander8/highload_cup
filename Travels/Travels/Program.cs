@@ -1,4 +1,6 @@
-﻿using System.Threading;
+﻿using System;
+using System.Runtime;
+using System.Threading;
 using Travels.Data.Dal;
 using Travels.Data.Dal.Service;
 using Travels.Data.Import;
@@ -17,6 +19,9 @@ namespace Travels
 
             InitServer();
             InitStorage();
+
+            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
 
             Mutex.WaitOne();
         }
