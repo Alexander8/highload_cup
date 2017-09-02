@@ -52,7 +52,7 @@ namespace Travels.Server
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Processing request: {ex}");
+                Console.WriteLine($"Failed to process request: {ex}");
                 return PrepareResponse(Tuple.Create(400, (string)null));
             }
         }

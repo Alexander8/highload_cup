@@ -40,7 +40,6 @@ namespace Travels.Server
                 Blocking = false
             };
 #endif
-
             ServerSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
             for (var i = 0; i < MaxSocketConnections; ++i)
