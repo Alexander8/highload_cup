@@ -25,6 +25,9 @@ namespace Travels.Server
 
                 var requestData = sb.ToString();
 
+                if (requestData.Length < 3)
+                    return PrepareResponse(Tuple.Create(400, (string)null));
+
                 var verb = GetVerb(requestData);
                 var url = requestData.Substring(verb.Length + 1, requestData.IndexOf(' ', verb.Length + 1) - verb.Length - 1).Trim('/');
                 string payload = null;
@@ -59,6 +62,7 @@ namespace Travels.Server
             var verb = data.Substring(0, 3);
             if (verb != "GET")
                 verb = "POST";
+
             return verb;
         }
 
