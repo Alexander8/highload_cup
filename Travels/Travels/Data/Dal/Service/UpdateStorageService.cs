@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Threading;
 using Travels.Data.Dto;
 
@@ -83,31 +84,41 @@ namespace Travels.Data.Dal.Service
             {
                 while (processedOperationIndex <= _operationIndex)
                 {
-                    var operation = Queue[processedOperationIndex];
+                    UpdateStorageOperationDto operation = null;
 
-                    switch (operation.Type)
+                    try
                     {
-                        case UpdateStorageOperationType.CreateUser:
-                            Storage.CreateUser((CreateUserParamsDto)operation.Params);
-                            break;
-                        case UpdateStorageOperationType.UpdateUser:
-                            Storage.UpdateUser((UpdateUserParamsDto)operation.Params);
-                            break;
-                        case UpdateStorageOperationType.CreateLocation:
-                            Storage.CreateLocation((CreateLocationParamsDto)operation.Params);
-                            break;
-                        case UpdateStorageOperationType.UpdateLocation:
-                            Storage.UpdateLocation((UpdateLocationParamsDto)operation.Params);
-                            break;
-                        case UpdateStorageOperationType.CreateVisit:
-                            Storage.CreateVisit((CreateVisitParamsDto)operation.Params);
-                            break;
-                        case UpdateStorageOperationType.UpdateVisit:
-                            Storage.UpdateVisit((UpdateVisitParamsDto)operation.Params);
-                            break;
-                    }
+                        operation = Queue[processedOperationIndex];
 
-                    ++processedOperationIndex;
+                        switch (operation.Type)
+                        {
+                            case UpdateStorageOperationType.CreateUser:
+                                Storage.CreateUser((CreateUserParamsDto)operation.Params);
+                                break;
+                            case UpdateStorageOperationType.UpdateUser:
+                                Storage.UpdateUser((UpdateUserParamsDto)operation.Params);
+                                break;
+                            case UpdateStorageOperationType.CreateLocation:
+                                Storage.CreateLocation((CreateLocationParamsDto)operation.Params);
+                                break;
+                            case UpdateStorageOperationType.UpdateLocation:
+                                Storage.UpdateLocation((UpdateLocationParamsDto)operation.Params);
+                                break;
+                            case UpdateStorageOperationType.CreateVisit:
+                                Storage.CreateVisit((CreateVisitParamsDto)operation.Params);
+                                break;
+                            case UpdateStorageOperationType.UpdateVisit:
+                                Storage.UpdateVisit((UpdateVisitParamsDto)operation.Params);
+                                break;
+                        }
+
+                        ++processedOperationIndex;
+                    }
+                    catch (Exception ex)
+                    {
+                        var msg = $"Type: {operation?.Type}, Params: '{(operation == null || operation.Params == null ? "null" : JsonConvert.SerializeObject(operation.Params))}', Ex: {ex}";
+                        Console.WriteLine(msg);
+                    }
 
                     if (processedOperationIndex % 1000 == 0)
                         Console.WriteLine($"[{DateTime.Now}] Processed: {processedOperationIndex}, Total: {_operationIndex}");

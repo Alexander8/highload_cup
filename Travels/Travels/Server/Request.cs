@@ -52,8 +52,8 @@ namespace Travels.Server
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
-                return new byte[0];
+                Console.WriteLine($"Processing request: {ex}");
+                return PrepareResponse(Tuple.Create(400, (string)null));
             }
         }
 
