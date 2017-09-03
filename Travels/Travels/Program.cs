@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using Travels.Data.Dal;
 using Travels.Data.Dal.Service;
@@ -14,6 +15,8 @@ namespace Travels
 
         private static void Main()
         {
+            AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+            
             ThreadPool.GetMaxThreads(out var workerThreads, out var completionPortThreads);
             ThreadPool.SetMinThreads(workerThreads / 2, completionPortThreads / 2);
 
@@ -23,7 +26,15 @@ namespace Travels
             GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
 
+            GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
+            Console.WriteLine("IsServerGC: " + GCSettings.IsServerGC);
+
             Mutex.WaitOne();
+        }
+
+        private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            Console.WriteLine($"Unhandled exception. IsTerminating: {e.IsTerminating}, {e.ExceptionObject}");
         }
 
         private static void InitServer()
