@@ -89,6 +89,8 @@ namespace Travels.Data.Dal.Service
                     try
                     {
                         operation = Queue[processedOperationIndex];
+                        if (operation == null)
+                            continue;
 
                         switch (operation.Type)
                         {
