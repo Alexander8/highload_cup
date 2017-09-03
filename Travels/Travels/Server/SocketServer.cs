@@ -7,8 +7,8 @@ namespace Travels.Server
 {
     internal static class SocketServer
     {
-        private const int MaxSocketConnections = 50000;
-        private const int MaxBufferSize = 1024 * 5;
+        private const int MaxSocketConnections = 30000;
+        private const int MaxBufferSize = 1024 * 2;
 
         private static readonly IPEndPoint IpEndPoint;
         private static readonly Socket ServerSocket;
@@ -26,21 +26,23 @@ namespace Travels.Server
             ServerSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
             {
                 NoDelay = true,
-                ReceiveTimeout = 10,
-                SendTimeout = 10,
-                Blocking = false
+                Blocking = false,
+                ReceiveBufferSize = MaxBufferSize,
+                SendBufferSize = MaxBufferSize * 2
             };
 #else
             IpEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, port);
             ServerSocket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp)
             {
                 NoDelay = true,
-                ReceiveTimeout = 10,
-                SendTimeout = 10,
-                Blocking = false
+                Blocking = false,
+                ReceiveBufferSize = MaxBufferSize,
+                SendBufferSize = MaxBufferSize * 2
             };
 #endif
             ServerSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+            //ServerSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.DontLinger, true);
+            //ServerSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.DontRoute, true);
 
             for (var i = 0; i < MaxSocketConnections; ++i)
             {
