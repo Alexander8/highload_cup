@@ -7,13 +7,22 @@ namespace Travels.Server
 {
     internal sealed class Request
     {
-        public readonly Socket Socket;
+        public Socket Socket;
         public readonly byte[] Body;
 
-        public Request(Socket socket, byte[] body)
+        public Request(byte[] body)
+        {
+            Body = body;
+        }
+
+        public void AssignSocket(Socket socket)
         {
             Socket = socket;
-            Body = body;
+        }
+
+        public void Reset()
+        {
+            Socket = null;
         }
 
         public byte[] Process(int requestSize)

@@ -7,12 +7,12 @@ namespace Travels.Server
 {
     internal static class SocketServer
     {
-        private const int MaxSocketConnections = 30000;
+        private const int MaxSocketConnections = 50000;
         private const int MaxBufferSize = 1024 * 2;
 
         private static readonly IPEndPoint IpEndPoint;
         private static readonly Socket ServerSocket;
-        private static readonly ConcurrentBag<byte[]> BufferPool = new ConcurrentBag<byte[]>();
+        private static readonly ConcurrentBag<Request> RequestPool = new ConcurrentBag<Request>();
 
         static SocketServer()
         {
@@ -28,7 +28,8 @@ namespace Travels.Server
                 NoDelay = true,
                 Blocking = false,
                 ReceiveBufferSize = MaxBufferSize,
-                SendBufferSize = MaxBufferSize * 2
+                SendBufferSize = MaxBufferSize * 2,
+                LingerState = new LingerOption(true, 0)
             };
 #else
             IpEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, port);
@@ -37,17 +38,16 @@ namespace Travels.Server
                 NoDelay = true,
                 Blocking = false,
                 ReceiveBufferSize = MaxBufferSize,
-                SendBufferSize = MaxBufferSize * 2
+                SendBufferSize = MaxBufferSize * 2,
+                LingerState = new LingerOption(true, 0)
             };
 #endif
             ServerSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-            //ServerSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.DontLinger, true);
-            //ServerSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.DontRoute, true);
 
             for (var i = 0; i < MaxSocketConnections; ++i)
             {
-                var buffer = new byte[MaxBufferSize];
-                BufferPool.Add(buffer);
+                var body = new byte[MaxBufferSize];
+                RequestPool.Add(new Request(body));
             }
         }
 
@@ -75,27 +75,38 @@ namespace Travels.Server
         private static void ProcessConnection(IAsyncResult asyncResult)
         {
             Socket acceptedSocket = null;
-            byte[] buffer = null;
 
             try
             {
+                var canContinue = true;
+
+                try
+                {
+                    acceptedSocket = ServerSocket.EndAccept(asyncResult);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                    canContinue = false;
+                }
+
                 ProcessConnections();
 
-                acceptedSocket = ServerSocket.EndAccept(asyncResult);
+                if (!canContinue)
+                    return;
 
                 if (!acceptedSocket.Connected)
                 {
                     CloseSocket(acceptedSocket);
-                    BufferPool.Add(buffer);
                     return;
                 }
 
-                if (!BufferPool.TryTake(out buffer))
-                    buffer = new byte[MaxBufferSize];
+                if (!RequestPool.TryTake(out var request))
+                    request = new Request(new byte[MaxBufferSize]);
 
-                var request = new Request(acceptedSocket, buffer);
+                request.AssignSocket(acceptedSocket);
 
-                acceptedSocket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, ProcessRequest, request);
+                acceptedSocket.BeginReceive(request.Body, 0, request.Body.Length, SocketFlags.None, ProcessRequest, request);
             }
             catch (Exception ex)
             {
@@ -118,7 +129,6 @@ namespace Travels.Server
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
-
                 CloseSocket(request.Socket);
             }
         }
@@ -138,7 +148,9 @@ namespace Travels.Server
             finally
             {
                 CloseSocket(request.Socket);
-                BufferPool.Add(request.Body);
+
+                request.Reset();
+                RequestPool.Add(request);
             }
         }
 
