@@ -224,9 +224,6 @@ namespace Travels.Data.Dal
 
                 if (updateParams.LocationId.HasValue)
                 {
-                    if (setAdded)
-                        commandText.Append(",");
-
                     commandText.Append("location = @location");
                     command.Parameters.AddWithValue("@location", updateParams.LocationId.Value);
                     setAdded = true;

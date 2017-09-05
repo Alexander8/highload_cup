@@ -18,7 +18,6 @@ namespace Travels.Server
         private static readonly Thread AcceptConnectionsThread;
         private static readonly List<Thread> ProcessConnectionsThreads = new List<Thread>();
         private static readonly ConcurrentQueue<Socket> RequestsQueue = new ConcurrentQueue<Socket>();
-        private static readonly ConcurrentBag<Request> RequestPool = new ConcurrentBag<Request>();
 
         static SocketServer()
         {
@@ -68,12 +67,6 @@ namespace Travels.Server
 
                 ProcessConnectionsThreads.Add(thread);
             }
-
-            for (var i = 0; i < MaxSocketConnections; ++i)
-            {
-                var body = new byte[MaxBufferSize];
-                RequestPool.Add(new Request(body));
-            }
         }
 
         public static void Init()
@@ -107,13 +100,12 @@ namespace Travels.Server
 
         private static void ProcessConnections()
         {
+            var request = new Request(new byte[MaxBufferSize]);
+
             while (true)
             {
                 if (!RequestsQueue.TryDequeue(out var socket))
                     continue;
-
-                if (!RequestPool.TryTake(out var request))
-                    request = new Request(new byte[MaxBufferSize]);
 
                 try
                 {
@@ -138,7 +130,6 @@ namespace Travels.Server
                 finally
                 {
                     CloseSocket(socket);
-                    RequestPool.Add(request);
                 }
             }
         }

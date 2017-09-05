@@ -17,10 +17,7 @@ namespace Travels.Server
         {
             try
             {
-                var sb = new StringBuilder(requestSize);
-                sb.Append(Encoding.UTF8.GetString(Body, 0, requestSize));
-
-                var requestData = sb.ToString();
+                var requestData = Encoding.UTF8.GetString(Body, 0, requestSize);
 
                 if (requestData.Length < 3)
                     return PrepareResponse(Tuple.Create(400, (string)null));
@@ -131,20 +128,20 @@ namespace Travels.Server
             var statusLine = "HTTP/1.1 " + response.Item1 + " " + HttpCodeToString(response.Item1);
 
             const string contentTypeLength = "Content-Type: application/json; charset=utf-8";
-            const string serverLine = "Server: Custom";
             var contentLengthLine = "Content-Length: " + (body?.Length ?? 0);
+            const string serverLine = "Server: Custom";
 
             var result = statusLine + "\r\n" + contentTypeLength + "\r\n" + serverLine + "\r\n" + contentLengthLine + "\r\n\r\n";
 
-            var headers = Encoding.UTF8.GetBytes(result);
+            var resultArr = Encoding.UTF8.GetBytes(result);
+            if (body == null)
+                return resultArr;
 
-            var headersAndBody = new byte[headers.Length + (body?.Length ?? 0)];
-            Array.Copy(headers, headersAndBody, headers.Length);
+            var oldLength = resultArr.Length;
+            Array.Resize(ref resultArr, resultArr.Length + body.Length);
+            Array.Copy(body, 0, resultArr, oldLength, body.Length);
 
-            if (body != null)
-                Array.Copy(body, 0, headersAndBody, headers.Length, body.Length);
-
-            return headersAndBody;
+            return resultArr;
         }
 
         private static string HttpCodeToString(int code)
