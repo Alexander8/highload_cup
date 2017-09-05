@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net.Sockets;
 using System.Text;
 using Travels.Server.Controller;
 
@@ -7,22 +6,11 @@ namespace Travels.Server
 {
     internal sealed class Request
     {
-        public Socket Socket;
         public readonly byte[] Body;
 
         public Request(byte[] body)
         {
             Body = body;
-        }
-
-        public void AssignSocket(Socket socket)
-        {
-            Socket = socket;
-        }
-
-        public void Reset()
-        {
-            Socket = null;
         }
 
         public byte[] Process(int requestSize)
@@ -142,8 +130,8 @@ namespace Travels.Server
 
             var statusLine = "HTTP/1.1 " + response.Item1 + " " + HttpCodeToString(response.Item1);
 
-            var contentTypeLength = "Content-Type: application/json; charset=utf-8";
-            var serverLine = "Server: Custom";
+            const string contentTypeLength = "Content-Type: application/json; charset=utf-8";
+            const string serverLine = "Server: Custom";
             var contentLengthLine = "Content-Length: " + (body?.Length ?? 0);
 
             var result = statusLine + "\r\n" + contentTypeLength + "\r\n" + serverLine + "\r\n" + contentLengthLine + "\r\n\r\n";

@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 
 namespace Travels.Server
 {
@@ -12,6 +15,9 @@ namespace Travels.Server
 
         private static readonly IPEndPoint IpEndPoint;
         private static readonly Socket ServerSocket;
+        private static readonly Thread AcceptConnectionsThread;
+        private static readonly List<Thread> ProcessConnectionsThreads = new List<Thread>();
+        private static readonly ConcurrentQueue<Socket> RequestsQueue = new ConcurrentQueue<Socket>();
         private static readonly ConcurrentBag<Request> RequestPool = new ConcurrentBag<Request>();
 
         static SocketServer()
@@ -26,9 +32,11 @@ namespace Travels.Server
             ServerSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
             {
                 NoDelay = true,
-                Blocking = false,
+                Blocking = true,
                 ReceiveBufferSize = MaxBufferSize,
                 SendBufferSize = MaxBufferSize * 2,
+                ReceiveTimeout = 10,
+                SendTimeout = 10,
                 LingerState = new LingerOption(true, 0)
             };
 #else
@@ -36,13 +44,30 @@ namespace Travels.Server
             ServerSocket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp)
             {
                 NoDelay = true,
-                Blocking = false,
+                Blocking = true,
                 ReceiveBufferSize = MaxBufferSize,
                 SendBufferSize = MaxBufferSize * 2,
+                ReceiveTimeout = 10,
+                SendTimeout = 10,
                 LingerState = new LingerOption(true, 0)
             };
 #endif
             ServerSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+
+            AcceptConnectionsThread = new Thread(AcceptConnections)
+            {
+                Name = "AcceptConnectionsThread"
+            };
+
+            for (var i = 0; i < 3; i++)
+            {
+                var thread = new Thread(ProcessConnections)
+                {
+                    Name = "ProcessConnectionsThread" + (i + 1)
+                };
+
+                ProcessConnectionsThreads.Add(thread);
+            }
 
             for (var i = 0; i < MaxSocketConnections; ++i)
             {
@@ -55,102 +80,66 @@ namespace Travels.Server
         {
             ServerSocket.Bind(IpEndPoint);
             ServerSocket.Listen(MaxSocketConnections);
-            ProcessConnections();
+
+            AcceptConnectionsThread.Start();
+
+            foreach (var thread in ProcessConnectionsThreads)
+                thread.Start();
 
             Console.WriteLine("Socket server initialized");
         }
 
-        private static void ProcessConnections()
+        private static void AcceptConnections()
         {
-            try
+            while (true)
             {
-                ServerSocket.BeginAccept(ProcessConnection, null);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
-        }
-
-        private static void ProcessConnection(IAsyncResult asyncResult)
-        {
-            Socket acceptedSocket = null;
-
-            try
-            {
-                var canContinue = true;
-
                 try
                 {
-                    acceptedSocket = ServerSocket.EndAccept(asyncResult);
+                    var acceptedSocket = ServerSocket.Accept();
+                    RequestsQueue.Enqueue(acceptedSocket);
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex);
-                    canContinue = false;
                 }
+            }
+        }
 
-                ProcessConnections();
-
-                if (!canContinue)
-                    return;
-
-                if (!acceptedSocket.Connected)
-                {
-                    CloseSocket(acceptedSocket);
-                    return;
-                }
+        private static void ProcessConnections()
+        {
+            while (true)
+            {
+                if (!RequestsQueue.TryDequeue(out var socket))
+                    continue;
 
                 if (!RequestPool.TryTake(out var request))
                     request = new Request(new byte[MaxBufferSize]);
 
-                request.AssignSocket(acceptedSocket);
+                try
+                {
+                    if (!socket.Connected)
+                    {
+                        Console.WriteLine("Socket is not connected: skip");
+                        continue;
+                    }
 
-                acceptedSocket.BeginReceive(request.Body, 0, request.Body.Length, SocketFlags.None, ProcessRequest, request);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
+                    var readBytes = socket.Receive(request.Body);
+                    Debug.Assert(readBytes > 0);
 
-                CloseSocket(acceptedSocket);
-            }
-        }
+                    var response = request.Process(readBytes);
 
-        private static void ProcessRequest(IAsyncResult asyncResult)
-        {
-            var request = (Request)asyncResult.AsyncState;
-
-            try
-            {
-                var readBytes = request.Socket.EndReceive(asyncResult);
-                var response = request.Process(readBytes);
-                request.Socket.BeginSend(response, 0, response.Length, SocketFlags.None, ProcessResponse, request);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-                CloseSocket(request.Socket);
-            }
-        }
-
-        private static void ProcessResponse(IAsyncResult asyncResult)
-        {
-            var request = (Request)asyncResult.AsyncState;
-
-            try
-            {
-                request.Socket.EndSend(asyncResult);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
-            finally
-            {
-                CloseSocket(request.Socket);
-
-                request.Reset();
-                RequestPool.Add(request);
+                    var sentBytes = socket.Send(response);
+                    Debug.Assert(sentBytes == response.Length);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
+                finally
+                {
+                    CloseSocket(socket);
+                    RequestPool.Add(request);
+                }
             }
         }
 

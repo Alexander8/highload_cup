@@ -20,7 +20,6 @@ namespace Travels
             ThreadPool.GetMaxThreads(out var workerThreads, out var completionPortThreads);
             ThreadPool.SetMinThreads(workerThreads / 2, completionPortThreads / 2);
 
-            InitServer();
             InitStorage();
 
             GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
@@ -29,17 +28,14 @@ namespace Travels
             GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
             Console.WriteLine("IsServerGC: " + GCSettings.IsServerGC);
 
+            InitServer();
+
             Mutex.WaitOne();
         }
 
         private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             Console.WriteLine($"Unhandled exception. IsTerminating: {e.IsTerminating}, {e.ExceptionObject}");
-        }
-
-        private static void InitServer()
-        {
-            SocketServer.Init();
         }
 
         private static void InitStorage()
@@ -50,6 +46,11 @@ namespace Travels
             Storage.LoadData(data);
 
             UpdateStorageService.Init();
+        }
+
+        private static void InitServer()
+        {
+            SocketServer.Init();
         }
     }
 }
