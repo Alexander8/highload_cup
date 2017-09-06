@@ -11,7 +11,6 @@ namespace Travels.Data.Dal
     internal static class Storage
     {
         private static readonly string ConnectionString;
-        private static readonly DateTime Now = DateTime.Now;
 
         public static readonly SqliteConnection ReadConnection;
         private static readonly SqliteConnection WriteConnection;
@@ -70,7 +69,7 @@ namespace Travels.Data.Dal
             _createUserCommand.Parameters[3].Value = createParams.LastName;
             _createUserCommand.Parameters[4].Value = ValidationUtil.GenderAsLong(createParams.Gender);
             _createUserCommand.Parameters[5].Value = createParams.BirthDate;
-            _createUserCommand.Parameters[6].Value = ValidationUtil.TimestampToAge(createParams.BirthDate, Now);
+            _createUserCommand.Parameters[6].Value = ValidationUtil.TimestampToAge(createParams.BirthDate);
             _createUserCommand.ExecuteNonQuery();
         }
 
@@ -146,7 +145,7 @@ namespace Travels.Data.Dal
 
                     commandText.Append("birth_date = @birth_date,age = @age");
                     command.Parameters.AddWithValue("@birth_date", updateParams.BirthDate.Value);
-                    command.Parameters.AddWithValue("@age", ValidationUtil.TimestampToAge(updateParams.BirthDate.Value, Now));
+                    command.Parameters.AddWithValue("@age", ValidationUtil.TimestampToAge(updateParams.BirthDate.Value));
 
                     setAdded = true;
                 }
@@ -348,7 +347,7 @@ namespace Travels.Data.Dal
                         last_name TEXT NOT NULL, 
                         gender INTEGER NOT NULL, 
                         birth_date INTEGER NOT NULL,
-                        age REAL NOT NULL
+                        age INTEGER NOT NULL
                     ) WITHOUT ROWID";
 
                 command.ExecuteNonQuery();
@@ -403,7 +402,7 @@ namespace Travels.Data.Dal
                     command.Parameters[3].Value = user.last_name;
                     command.Parameters[4].Value = ValidationUtil.GenderAsLong(user.gender);
                     command.Parameters[5].Value = user.birth_date;
-                    command.Parameters[6].Value = ValidationUtil.TimestampToAge(user.birth_date, Now);
+                    command.Parameters[6].Value = ValidationUtil.TimestampToAge(user.birth_date);
                     command.ExecuteNonQuery();
                 }
             }

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Travels.Data
+﻿namespace Travels.Data
 {
     internal static class ValidationConstants
     {
@@ -11,8 +9,6 @@ namespace Travels.Data
 
         public const long MinBirthdayTimestamp = -1262304000;
         public const long MaxBirthdayTimestamp = 915148800;
-        public static readonly DateTime MinBirthdayDate = new DateTime(1930, 1, 1);
-        public static readonly DateTime MaxBirthdayDate = new DateTime(1999, 1, 1);
 
         public const int MaxEmailLength = 100;
 

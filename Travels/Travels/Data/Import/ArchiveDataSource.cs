@@ -9,13 +9,13 @@ namespace Travels.Data.Import
 {
     internal sealed class ArchiveDataSource
     {
-        public TravelsData Read(string path)
+        public TravelsData Read(string archivePath, string optionsPath)
         {
-            if (string.IsNullOrEmpty(path))
-                throw new ArgumentNullException(nameof(path));
+            if (!File.Exists(archivePath))
+                throw new FileNotFoundException(archivePath);
 
-            if (!File.Exists(path))
-                throw new FileNotFoundException(path);
+            if (!File.Exists(optionsPath))
+                throw new FileNotFoundException(optionsPath);
 
             var data = new TravelsData
             {
@@ -24,7 +24,9 @@ namespace Travels.Data.Import
                 Visits = new List<VisitData>()
             };
 
-            using (var fstream = new FileStream(path, FileMode.Open, FileAccess.Read))
+            data.CurrentTimestamp = ReadTimestamp(optionsPath);
+
+            using (var fstream = new FileStream(archivePath, FileMode.Open, FileAccess.Read))
             using (var archive = new ZipArchive(fstream, ZipArchiveMode.Read))
             {
                 foreach (var entry in archive.Entries)
@@ -58,6 +60,12 @@ namespace Travels.Data.Import
                 var data = JsonConvert.DeserializeObject<Dictionary<string, List<T>>>(json);
                 return data[collectionName];
             }
+        }
+
+        private static long ReadTimestamp(string optionsPath)
+        {
+            var lines = File.ReadAllLines(optionsPath);
+            return long.Parse(lines[0]);
         }
     }
 }

@@ -9,5 +9,7 @@ namespace Travels.Data.Import
         public List<LocationData> Locations { get; set; }
 
         public List<VisitData> Visits { get; set; }
+
+        public long CurrentTimestamp { get; set; }
     }
 }

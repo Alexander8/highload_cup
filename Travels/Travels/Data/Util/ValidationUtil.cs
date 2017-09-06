@@ -4,16 +4,13 @@ namespace Travels.Data.Util
 {
     internal static class ValidationUtil
     {
-        private static readonly DateTime UnixDate = new DateTime(1970, 1, 1);
-
         private static readonly double MinAge;
         private static readonly double MaxAge;
 
         static ValidationUtil()
         {
-            var now = DateTime.Now;
-            MinAge = (now - ValidationConstants.MinBirthdayDate).TotalDays / 365.25;
-            MaxAge = (now - ValidationConstants.MaxBirthdayDate).TotalDays / 365.25;
+            MinAge = TimestampToAge(ValidationConstants.MaxBirthdayTimestamp);
+            MaxAge = TimestampToAge(ValidationConstants.MinBirthdayTimestamp);
         }
 
         public static bool IsEmailValid(string email)
@@ -41,15 +38,11 @@ namespace Travels.Data.Util
             return age >= MinAge && age <= MaxAge;
         }
 
-        public static double TimestampToAge(long timestamp, DateTime now)
+        public static int TimestampToAge(long birth_date)
         {
-            var date = UnixDate.AddSeconds(timestamp);
-            //var age = now.Year - date.Year;
-            //if (date > now.AddYears(-age)) age--;
-            //return age;
-
-            var age = (now - date).TotalDays / 365.25;
-            return age;
+            var ageInSeconds = DatetimeUtil.CurrentTimestamp - birth_date;
+            var age = Math.Truncate(ageInSeconds / 31557600d);
+            return (int)age;
         }
 
         public static bool IsMarkValid(long mark)

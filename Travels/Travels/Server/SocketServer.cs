@@ -84,6 +84,8 @@ namespace Travels.Server
 
         private static void AcceptConnections()
         {
+            Thread.BeginThreadAffinity();
+
             while (true)
             {
                 try
@@ -96,10 +98,14 @@ namespace Travels.Server
                     Console.WriteLine(ex);
                 }
             }
+
+            Thread.EndThreadAffinity();
         }
 
         private static void ProcessConnections()
         {
+            Thread.BeginThreadAffinity();
+
             var request = new Request(new byte[MaxBufferSize]);
 
             while (true)
@@ -132,6 +138,8 @@ namespace Travels.Server
                     CloseSocket(socket);
                 }
             }
+
+            Thread.EndThreadAffinity();
         }
 
         private static void CloseSocket(Socket socket)

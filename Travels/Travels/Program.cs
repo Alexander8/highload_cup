@@ -5,6 +5,7 @@ using System.Threading;
 using Travels.Data.Dal;
 using Travels.Data.Dal.Service;
 using Travels.Data.Import;
+using Travels.Data.Util;
 using Travels.Server;
 
 namespace Travels
@@ -41,7 +42,10 @@ namespace Travels
         private static void InitStorage()
         {
             var dataSource = new ArchiveDataSource();
-            var data = dataSource.Read("/tmp/data/data.zip");
+            var data = dataSource.Read("/tmp/data/data.zip", "/tmp/data/options.txt");
+
+            DatetimeUtil.CurrentTimestamp = data.CurrentTimestamp;
+            Console.WriteLine($"CurrentTimestamp: {DatetimeUtil.CurrentTimestamp}");
 
             Storage.LoadData(data);
 

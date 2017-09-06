@@ -63,7 +63,7 @@ namespace Travels.Data.Dal.Repository
 
                     if (fromAge.HasValue)
                     {
-                        wherePart.Append(" and u.age > @fromAge");
+                        wherePart.Append(" and u.age >= @fromAge");
                         command.Parameters.AddWithValue("@fromAge", fromAge.Value);
                     }
 
