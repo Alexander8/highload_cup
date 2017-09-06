@@ -63,7 +63,9 @@ namespace Travels.Server.Controller
                 toAge == int.MinValue ? (int?)null : toAge,
                 queryString.ContainsKey("gender") ? queryString["gender"] : null);
 
-            return Tuple.Create(200, JsonConvert.SerializeObject(new { avg = averageMark }));
+            var result = "{ \"avg\": " + averageMark + "}";
+
+            return Tuple.Create(200, result);
         }
 
         public static Tuple<int, string> Create(string payload)

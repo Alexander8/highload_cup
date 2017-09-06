@@ -1,16 +1,33 @@
-﻿using Travels.Data.Model;
+﻿using Microsoft.Data.Sqlite;
+using System.Collections.Concurrent;
+using Travels.Data.Model;
 
 namespace Travels.Data.Dal.Repository
 {
     internal static class VisitRepository
     {
+        private const int CommandsCacheSize = 50000;
+
+        private static readonly ConcurrentBag<SqliteCommand> GetVisitCommands = new ConcurrentBag<SqliteCommand>();
+        private static readonly ConcurrentBag<SqliteCommand> VisitExistsCommands = new ConcurrentBag<SqliteCommand>();
+
+        public static void Init()
+        {
+            for (var i = 0; i < CommandsCacheSize; ++i)
+                GetVisitCommands.Add(CreateGetVisitCommand());
+
+            for (var i = 0; i < CommandsCacheSize; ++i)
+                VisitExistsCommands.Add(CreateVisitExistsCommand());
+        }
+
         public static Visit GetVisit(long id)
         {
-            var connection = Storage.ReadConnection;
-            using (var command = connection.CreateCommand())
+            if (!GetVisitCommands.TryTake(out var command))
+                command = CreateGetVisitCommand();
+
+            try
             {
-                command.CommandText = "select location, user, visited_at, mark from Visit where id = @id";
-                command.Parameters.AddWithValue("@id", id);
+                command.Parameters["@id"].Value = id;
 
                 using (var reader = command.ExecuteReader())
                 {
@@ -31,19 +48,44 @@ namespace Travels.Data.Dal.Repository
                     }
                 }
             }
+            finally
+            {
+                GetVisitCommands.Add(command);
+            }
         }
 
         public static bool VisitExists(long id)
         {
-            var connection = Storage.ReadConnection;
-            using (var command = connection.CreateCommand())
+            if (!VisitExistsCommands.TryTake(out var command))
+                command = CreateVisitExistsCommand();
+
+            try
             {
-                command.CommandText = "select 1 from Visit where id = @id";
-                command.Parameters.AddWithValue("@id", id);
+                command.Parameters["@id"].Value = id;
 
                 var res = command.ExecuteScalar();
                 return res != null;
             }
+            finally
+            {
+                VisitExistsCommands.Add(command);
+            }
+        }
+
+        private static SqliteCommand CreateGetVisitCommand()
+        {
+            var command = Storage.ReadConnection.CreateCommand();
+            command.CommandText = "select location, user, visited_at, mark from Visit where id = @id";
+            command.Parameters.AddWithValue("@id", null);
+            return command;
+        }
+
+        private static SqliteCommand CreateVisitExistsCommand()
+        {
+            var command = Storage.ReadConnection.CreateCommand();
+            command.CommandText = "select 1 from Visit where id = @id";
+            command.Parameters.AddWithValue("@id", null);
+            return command;
         }
     }
 }

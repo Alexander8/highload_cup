@@ -10,7 +10,7 @@ namespace Travels.Server
 {
     internal static class SocketServer
     {
-        private const int MaxSocketConnections = 50000;
+        private const int MaxSocketConnections = 16384;
         private const int MaxBufferSize = 1024 * 2;
 
         private static readonly IPEndPoint IpEndPoint;
@@ -84,8 +84,6 @@ namespace Travels.Server
 
         private static void AcceptConnections()
         {
-            Thread.BeginThreadAffinity();
-
             while (true)
             {
                 try
@@ -98,14 +96,10 @@ namespace Travels.Server
                     Console.WriteLine(ex);
                 }
             }
-
-            Thread.EndThreadAffinity();
         }
 
         private static void ProcessConnections()
         {
-            Thread.BeginThreadAffinity();
-
             var request = new Request(new byte[MaxBufferSize]);
 
             while (true)
@@ -115,12 +109,6 @@ namespace Travels.Server
 
                 try
                 {
-                    if (!socket.Connected)
-                    {
-                        Console.WriteLine("Socket is not connected: skip");
-                        continue;
-                    }
-
                     var readBytes = socket.Receive(request.Body);
                     Debug.Assert(readBytes > 0);
 
@@ -138,8 +126,6 @@ namespace Travels.Server
                     CloseSocket(socket);
                 }
             }
-
-            Thread.EndThreadAffinity();
         }
 
         private static void CloseSocket(Socket socket)

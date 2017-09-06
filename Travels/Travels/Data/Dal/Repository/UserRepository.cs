@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.Data.Sqlite;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Text;
 using Travels.Data.Dto;
 using Travels.Data.Model;
@@ -7,13 +9,28 @@ namespace Travels.Data.Dal.Repository
 {
     internal static class UserRepository
     {
+        private const int CommandsCacheSize = 50000;
+
+        private static readonly ConcurrentBag<SqliteCommand> GetFlatUserCommands = new ConcurrentBag<SqliteCommand>();
+        private static readonly ConcurrentBag<SqliteCommand> UserExistsCommands = new ConcurrentBag<SqliteCommand>();
+
+        public static void Init()
+        {
+            for (var i = 0; i < CommandsCacheSize; ++i)
+                GetFlatUserCommands.Add(CreateGetFlatUserCommand());
+
+            for (var i = 0; i < CommandsCacheSize; ++i)
+                UserExistsCommands.Add(CreateUserExistsCommand());
+        }
+
         public static User GetFlatUser(int id)
         {
-            var connection = Storage.ReadConnection;
-            using (var command = connection.CreateCommand())
+            if (!GetFlatUserCommands.TryTake(out var command))
+                command = CreateGetFlatUserCommand();
+
+            try
             {
-                command.CommandText = "select email, first_name, last_name, gender, birth_date from User where id = @id";
-                command.Parameters.AddWithValue("@id", id);
+                command.Parameters["@id"].Value = id;
 
                 using (var reader = command.ExecuteReader())
                 {
@@ -35,18 +52,27 @@ namespace Travels.Data.Dal.Repository
                     }
                 }
             }
+            finally
+            {
+                GetFlatUserCommands.Add(command);
+            }
         }
 
         public static bool UserExists(int id)
         {
-            var connection = Storage.ReadConnection;
-            using (var command = connection.CreateCommand())
+            if (!UserExistsCommands.TryTake(out var command))
+                command = CreateUserExistsCommand();
+
+            try
             {
-                command.CommandText = "select 1 from User where id = @id";
-                command.Parameters.AddWithValue("@id", id);
+                command.Parameters["@id"].Value = id;
 
                 var res = command.ExecuteScalar();
                 return res != null;
+            }
+            finally
+            {
+                UserExistsCommands.Add(command);
             }
         }
 
@@ -107,6 +133,22 @@ namespace Travels.Data.Dal.Repository
 
                 return result;
             }        
+        }
+
+        private static SqliteCommand CreateGetFlatUserCommand()
+        {
+            var command = Storage.ReadConnection.CreateCommand();
+            command.CommandText = "select email, first_name, last_name, gender, birth_date from User where id = @id";
+            command.Parameters.AddWithValue("@id", null);
+            return command;
+        }
+
+        private static SqliteCommand CreateUserExistsCommand()
+        {
+            var command = Storage.ReadConnection.CreateCommand();
+            command.CommandText = "select 1 from User where id = @id";
+            command.Parameters.AddWithValue("@id", null);
+            return command;
         }
     }
 }

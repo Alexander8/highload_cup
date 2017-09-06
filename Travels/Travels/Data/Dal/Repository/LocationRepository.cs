@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Data.Sqlite;
+using System;
+using System.Collections.Concurrent;
 using System.Text;
 using Travels.Data.Model;
 using Travels.Data.Util;
@@ -7,13 +9,28 @@ namespace Travels.Data.Dal.Repository
 {
     internal static class LocationRepository
     {
+        private const int CommandsCacheSize = 50000;
+
+        private static readonly ConcurrentBag<SqliteCommand> GetFlatLocationCommands = new ConcurrentBag<SqliteCommand>();
+        private static readonly ConcurrentBag<SqliteCommand> LocationExistsCommands = new ConcurrentBag<SqliteCommand>();
+
+        public static void Init()
+        {
+            for (var i = 0; i < CommandsCacheSize; ++i)
+                GetFlatLocationCommands.Add(CreateGetFlatLocationCommand());
+
+            for (var i = 0; i < CommandsCacheSize; ++i)
+                LocationExistsCommands.Add(CreateLocationExistsCommand());
+        }
+
         public static Location GetFlatLocation(long id)
         {
-            var connection = Storage.ReadConnection;
-            using (var command = connection.CreateCommand())
+            if (!GetFlatLocationCommands.TryTake(out var command))
+                command = CreateGetFlatLocationCommand();
+
+            try
             {
-                command.CommandText = "select place, country, city, distance from Location where id = @id";
-                command.Parameters.AddWithValue("@id", id);
+                command.Parameters["@id"].Value = id;
 
                 using (var reader = command.ExecuteReader())
                 {
@@ -34,18 +51,27 @@ namespace Travels.Data.Dal.Repository
                     }
                 }
             }
+            finally
+            {
+                GetFlatLocationCommands.Add(command);
+            }
         }
 
         public static bool LocationExists(long id)
         {
-            var connection = Storage.ReadConnection;
-            using (var command = connection.CreateCommand())
+            if (!LocationExistsCommands.TryTake(out var command))
+                command = CreateLocationExistsCommand();
+
+            try
             {
-                command.CommandText = "select 1 from Location where id = @id";
-                command.Parameters.AddWithValue("@id", id);
+                command.Parameters["@id"].Value = id;
 
                 var res = command.ExecuteScalar();
                 return res != null;
+            }
+            finally
+            {
+                LocationExistsCommands.Add(command);
             }
         }
 
@@ -106,6 +132,22 @@ namespace Travels.Data.Dal.Repository
 
                 return Math.Round((double)result, 5);
             }
+        }
+
+        private static SqliteCommand CreateGetFlatLocationCommand()
+        {
+            var command = Storage.ReadConnection.CreateCommand();
+            command.CommandText = "select place, country, city, distance from Location where id = @id";
+            command.Parameters.AddWithValue("@id", null);
+            return command;
+        }
+
+        private static SqliteCommand CreateLocationExistsCommand()
+        {
+            var command = Storage.ReadConnection.CreateCommand();
+            command.CommandText = "select 1 from Location where id = @id";
+            command.Parameters.AddWithValue("@id", null);
+            return command;
         }
     }
 }
