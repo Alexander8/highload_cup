@@ -1,11 +1,9 @@
 ﻿using System;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Travels.Data.Dal.Repository;
-using Travels.Data.Dal.Service;
-using Travels.Data.Dto;
 using Travels.Data.Util;
 using Travels.Server.Controller.Util;
+using Travels.Data.Dal;
 
 namespace Travels.Server.Controller
 {
@@ -18,11 +16,20 @@ namespace Travels.Server.Controller
             if (!ParseUtil.TryGetIdFromUrl(url, out var id))
                 return Tuple.Create(404, (string)null);
 
-            var location = LocationRepository.GetFlatLocation(id);
+            var location = LocationRepository.GetLocation(id);
             if (location == null)
                 return Tuple.Create(404, (string)null);
 
-            return Tuple.Create(200, JsonConvert.SerializeObject(location));
+            var result = new JObject
+            {
+                ["id"] = location.Id,
+                ["place"] = location.Place,
+                ["country"] = location.Country,
+                ["city"] = location.City,
+                ["distance"] = location.Distance
+            };
+
+            return Tuple.Create(200, result.ToString());
         }
 
         public static Tuple<int, string> Avg(string url)
@@ -91,7 +98,7 @@ namespace Travels.Server.Controller
                 return Tuple.Create(400, (string)null);
 
             // ReSharper disable PossibleInvalidOperationException
-            UpdateStorageService.EnqueueCreateLocation(new CreateLocationParamsDto(id.Value, place, country, city, distance.Value));
+            Storage.CreateLocation(id.Value, place, country, city, distance.Value);
             // ReSharper restore PossibleInvalidOperationException
 
             return Tuple.Create(200, EmptyObject);
@@ -123,7 +130,7 @@ namespace Travels.Server.Controller
             if (!IsLocationToUpdateValid(place, city, country, distance))
                 return Tuple.Create(400, (string)null);
 
-            UpdateStorageService.EnqueueUpdateLocation(new UpdateLocationParamsDto(id, place, city, country, distance));
+            Storage.UpdateLocation(id, place, city, country, distance);
 
             return Tuple.Create(200, EmptyObject);
         }

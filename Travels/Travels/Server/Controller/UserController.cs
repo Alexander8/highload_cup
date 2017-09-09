@@ -2,10 +2,9 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Travels.Data.Dal.Repository;
-using Travels.Data.Dal.Service;
-using Travels.Data.Dto;
 using Travels.Data.Util;
 using Travels.Server.Controller.Util;
+using Travels.Data.Dal;
 
 namespace Travels.Server.Controller
 {
@@ -18,21 +17,21 @@ namespace Travels.Server.Controller
             if (!ParseUtil.TryGetIdFromUrl(url, out var id))
                 return Tuple.Create(404, (string)null);
 
-            var user = UserRepository.GetFlatUser(id);
+            var user = UserRepository.GetUser(id);
             if (user == null)
                 return Tuple.Create(404, (string)null);
 
-            var result = new
+            var result = new JObject
             {
-                user.id,
-                user.email,
-                user.first_name,
-                user.last_name,
-                gender = ValidationUtil.GenderAsString(user.gender),
-                user.birth_date
+                ["id"] = user.Id,
+                ["email"] = user.Email,
+                ["first_name"] = user.FirstName,
+                ["last_name"] = user.LastName,
+                ["gender"] = user.Gender,
+                ["birth_date"] = user.BirthDate
             };
 
-            return Tuple.Create(200, JsonConvert.SerializeObject(result));
+            return Tuple.Create(200, result.ToString());
         }
 
         public static Tuple<int, string> GetVisits(string url)
@@ -102,7 +101,7 @@ namespace Travels.Server.Controller
                 return Tuple.Create(400, (string)null);
 
             // ReSharper disable PossibleInvalidOperationException
-            UpdateStorageService.EnqueueCreateUser(new CreateUserParamsDto(id.Value, email, first_name, last_name, gender, birth_date.Value));
+            Storage.CreateUser(id.Value, email, first_name, last_name, gender, birth_date.Value);
             // ReSharper restore PossibleInvalidOperationException
 
             return Tuple.Create(200, EmptyObject);
@@ -137,7 +136,7 @@ namespace Travels.Server.Controller
             if (!IsUserToUpdateValid(email, first_name, last_name, gender, birth_date))
                 return Tuple.Create(400, (string)null);
 
-            UpdateStorageService.EnqueueUpdateUser(new UpdateUserParamsDto(id, email, first_name, last_name, gender, birth_date));
+            Storage.UpdateUser(id, email, first_name, last_name, gender, birth_date);
 
             return Tuple.Create(200, EmptyObject);
         }

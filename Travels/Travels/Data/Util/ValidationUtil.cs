@@ -69,15 +69,5 @@ namespace Travels.Data.Util
         {
             return country != null && country.Length <= ValidationConstants.MaxCountryLength;
         }
-
-        public static long GenderAsLong(string gender)
-        {
-            return gender == "m" ? 1 : 0;
-        }
-
-        public static string GenderAsString(long gender)
-        {
-            return gender == 1 ? "m" : "f";
-        }
     }
 }

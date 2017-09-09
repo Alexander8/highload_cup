@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using Newtonsoft.Json;
+using Travels.Data.Model;
 
 namespace Travels.Data.Import
 {
@@ -19,12 +20,8 @@ namespace Travels.Data.Import
 
             var data = new TravelsData
             {
-                Users = new List<UserData>(),
-                Locations = new List<LocationData>(),
-                Visits = new List<VisitData>()
+                CurrentTimestamp = ReadTimestamp(optionsPath)
             };
-
-            data.CurrentTimestamp = ReadTimestamp(optionsPath);
 
             using (var fstream = new FileStream(archivePath, FileMode.Open, FileAccess.Read))
             using (var archive = new ZipArchive(fstream, ZipArchiveMode.Read))
@@ -33,15 +30,15 @@ namespace Travels.Data.Import
                 {
                     if (entry.Name.StartsWith(DataConstants.Users))
                     {
-                        data.Users.AddRange(Read<UserData>(entry, DataConstants.Users));
+                        data.Users.AddRange(Read<User>(entry, DataConstants.Users));
                     }
                     else if (entry.Name.StartsWith(DataConstants.Locations))
                     {
-                        data.Locations.AddRange(Read<LocationData>(entry, DataConstants.Locations));
+                        data.Locations.AddRange(Read<Location>(entry, DataConstants.Locations));
                     }
                     else if (entry.Name.StartsWith(DataConstants.Visits))
                     {
-                        data.Visits.AddRange(Read<VisitData>(entry, DataConstants.Visits));
+                        data.Visits.AddRange(Read<Visit>(entry, DataConstants.Visits));
                     }
                 }
             }

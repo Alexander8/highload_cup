@@ -1,15 +1,41 @@
-﻿namespace Travels.Data.Model
+﻿using System;
+
+namespace Travels.Data.Model
 {
-    internal sealed class Visit
+    internal sealed class Visit : IEquatable<Visit>
     {
-        public long id { get; set; }
+        public readonly int Id;
+        public int LocationId;
+        public int UserId;
+        public long VisitedAt;
+        public int Mark;
 
-        public long location { get; set; }
+        public User User;
+        public Location Location;
 
-        public long user { get; set; }
+        public Visit(int id, int location, int user, long visited_at, int mark)
+        {
+            Id = id;
+            LocationId = location;
+            UserId = user;
+            VisitedAt = visited_at;
+            Mark = mark;
+        }
 
-        public long visited_at { get; set; }
+        public override bool Equals(object obj)
+        {
+            var visit = obj as Visit;
+            return Equals(visit);
+        }
 
-        public long mark { get; set; }
+        public bool Equals(Visit other)
+        {
+            return other != null && other.Id == Id;
+        }
+
+        public override int GetHashCode()
+        {
+            return Id;
+        }
     }
 }

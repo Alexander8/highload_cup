@@ -1,15 +1,41 @@
-﻿namespace Travels.Data.Model
+﻿using System;
+using System.Collections.Generic;
+
+namespace Travels.Data.Model
 {
-    internal sealed class Location
+    internal sealed class Location : IEquatable<Location>
     {
-        public long id { get; set; }
+        public int Id;
+        public string Place;
+        public string Country;
+        public string City;
+        public int Distance;
 
-        public string place { get; set; }
+        public List<Visit> Visits;
 
-        public string country { get; set; }
+        public Location(int id, string place, string country, string city, int distance)
+        {
+            Id = id;
+            Place = place;
+            Country = country;
+            City = city;
+            Distance = distance;
+        }
 
-        public string city { get; set; }
+        public override bool Equals(object obj)
+        {
+            var location = obj as Location;
+            return Equals(location);
+        }
 
-        public long distance { get; set; }
+        public bool Equals(Location other)
+        {
+            return other != null && other.Id == Id;
+        }
+
+        public override int GetHashCode()
+        {
+            return Id;
+        }
     }
 }

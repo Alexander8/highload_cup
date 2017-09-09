@@ -1,17 +1,46 @@
-﻿namespace Travels.Data.Model
+﻿using System;
+using System.Collections.Generic;
+using Travels.Data.Util;
+
+namespace Travels.Data.Model
 {
-    internal sealed class User
+    internal sealed class User : IEquatable<User>
     {
-        public long id { get; set; }
+        public readonly int Id;
+        public string Email;
+        public string FirstName;
+        public string LastName;
+        public string Gender;
+        public long BirthDate;
+        public int Age;
 
-        public string email { get; set; }
+        public List<Visit> Visits;
 
-        public string first_name { get; set; }
+        public User(int id, string email, string first_name, string last_name, string gender, long birth_date)
+        {
+            Id = id;
+            Email = email;
+            FirstName = first_name;
+            LastName = last_name;
+            Gender = gender;
+            Age = ValidationUtil.TimestampToAge(birth_date);
+            BirthDate = birth_date;
+        }
 
-        public string last_name { get; set; }
+        public override bool Equals(object obj)
+        {
+            var user = obj as User;
+            return Equals(user);
+        }
 
-        public long gender { get; set; }
+        public bool Equals(User other)
+        {
+            return other != null && other.Id == Id;
+        }
 
-        public long birth_date { get; set; }
+        public override int GetHashCode()
+        {
+            return Id;
+        }
     }
 }

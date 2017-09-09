@@ -2,10 +2,8 @@
 {
     public sealed class UserVisitToLocationDto
     {
-        public long mark { get; set; }
-
-        public long visited_at { get; set; }
-
-        public string place { get; set; }
+        public long mark;
+        public long visited_at;
+        public string place;
     }
 }

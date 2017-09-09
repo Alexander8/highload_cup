@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Runtime;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using Travels.Data.Dal;
-using Travels.Data.Dal.Repository;
-using Travels.Data.Dal.Service;
 using Travels.Data.Import;
 using Travels.Data.Util;
 using Travels.Server;
@@ -49,11 +46,6 @@ namespace Travels
             Console.WriteLine($"CurrentTimestamp: {DatetimeUtil.CurrentTimestamp}");
 
             Storage.LoadData(data);
-
-            UpdateStorageService.Init();
-            UserRepository.Init();
-            LocationRepository.Init();
-            VisitRepository.Init();
         }
 
         private static void InitServer()

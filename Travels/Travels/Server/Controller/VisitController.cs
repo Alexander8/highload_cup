@@ -1,11 +1,9 @@
 ﻿using System;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Travels.Data.Dal.Repository;
-using Travels.Data.Dal.Service;
-using Travels.Data.Dto;
 using Travels.Data.Util;
 using Travels.Server.Controller.Util;
+using Travels.Data.Dal;
 
 namespace Travels.Server.Controller
 {
@@ -22,7 +20,16 @@ namespace Travels.Server.Controller
             if (visit == null)
                 return Tuple.Create(404, (string)null);
 
-            return Tuple.Create(200, JsonConvert.SerializeObject(visit));
+            var result = new JObject
+            {
+                ["id"] = visit.Id,
+                ["location"] = visit.LocationId,
+                ["user"] = visit.UserId,
+                ["visited_at"] = visit.VisitedAt,
+                ["mark"] = visit.Mark
+            };
+
+            return Tuple.Create(200, result.ToString());
         }
 
         public static Tuple<int, string> Create(string payload)
@@ -48,7 +55,7 @@ namespace Travels.Server.Controller
                 return Tuple.Create(400, (string)null);
 
             // ReSharper disable PossibleInvalidOperationException
-            UpdateStorageService.EnqueueCreateVisit(new CreateVisitParamsDto(id.Value, location.Value, user.Value, visited_at.Value, mark.Value));
+            Storage.CreateVisit(id.Value, location.Value, user.Value, visited_at.Value, mark.Value);
             // ReSharper restore PossibleInvalidOperationException
 
             return Tuple.Create(200, EmptyObject);
@@ -80,7 +87,7 @@ namespace Travels.Server.Controller
             if (!IsVisitToUpdateValid(location, user, visited_at, mark))
                 return Tuple.Create(400, (string)null);
 
-            UpdateStorageService.EnqueueCreateVisit(new UpdateVisitParamsDto(id, location, user, visited_at, mark));
+            Storage.UpdateVisit(id, location, user, visited_at, mark);
 
             return Tuple.Create(200, EmptyObject);
         }
