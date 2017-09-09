@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Text;
 using Newtonsoft.Json;
 using Travels.Data.Model;
+using Travels.Data.Util;
 
 namespace Travels.Data.Import
 {
@@ -18,10 +19,10 @@ namespace Travels.Data.Import
             if (!File.Exists(optionsPath))
                 throw new FileNotFoundException(optionsPath);
 
-            var data = new TravelsData
-            {
-                CurrentTimestamp = ReadTimestamp(optionsPath)
-            };
+            DatetimeUtil.CurrentTimestamp = ReadTimestamp(optionsPath);
+            Console.WriteLine($"CurrentTimestamp: {DatetimeUtil.CurrentTimestamp}");
+
+            var data = new TravelsData();
 
             using (var fstream = new FileStream(archivePath, FileMode.Open, FileAccess.Read))
             using (var archive = new ZipArchive(fstream, ZipArchiveMode.Read))

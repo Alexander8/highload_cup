@@ -35,7 +35,7 @@ namespace Travels.Data.Dal.Repository
             if (country != null)
                 query = query.Where(v => v.Location.Country == country);
 
-            if (toDistance != null)
+            if (toDistance.HasValue)
                 query = query.Where(v => v.Location.Distance < toDistance.Value);
 
             return query

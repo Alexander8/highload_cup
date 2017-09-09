@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Travels.Data.Dto;
 using Travels.Data.Import;
@@ -36,15 +37,18 @@ namespace Travels.Data.Dal
                 v.User = Users[v.UserId];
                 v.Location = Locations[v.LocationId];
 
-                if (Users[v.UserId].Visits == null)
-                    Users[v.UserId].Visits = new List<Visit>();
+                Debug.Assert(v.User != null);
+                Debug.Assert(v.Location != null);
 
-                Users[v.UserId].Visits.Add(v);
+                if (v.User.Visits == null)
+                    v.User.Visits = new List<Visit>();
 
-                if (Locations[v.LocationId].Visits == null)
-                    Locations[v.LocationId].Visits = new List<Visit>();
+                v.User.Visits.Add(v);
 
-                Locations[v.LocationId].Visits.Add(v);
+                if (v.Location.Visits == null)
+                    v.Location.Visits = new List<Visit>();
+
+                v.Location.Visits.Add(v);
             }
 
             Console.WriteLine("Data loaded to storage");
@@ -109,16 +113,26 @@ namespace Travels.Data.Dal
             Visits[id] = new Visit(id, locationId, userId, visited_at, mark);
 
             var user = Users[userId];
-            if (user.Visits == null)
-                user.Visits = new List<Visit>();
+            Visits[id].User = user;
 
-            Users[userId].Visits.Add(Visits[id]);
+            lock (user)
+            {
+                if (user.Visits == null)
+                    user.Visits = new List<Visit>();
+
+                user.Visits.Add(Visits[id]);
+            }
 
             var location = Locations[locationId];
-            if (location.Visits == null)
-                location.Visits = new List<Visit>();
+            Visits[id].Location = location;
 
-            location.Visits.Add(Visits[id]);
+            lock (location)
+            {
+                if (location.Visits == null)
+                    location.Visits = new List<Visit>();
+
+                location.Visits.Add(Visits[id]);
+            }
         }
 
         public static void UpdateVisit(int id, int? locationId, int? userId, long? visited_at, int? mark)

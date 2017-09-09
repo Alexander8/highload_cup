@@ -8,6 +8,5 @@ namespace Travels.Data.Import
         public readonly List<User> Users = new List<User>();
         public readonly List<Location> Locations = new List<Location>();
         public readonly List<Visit> Visits = new List<Visit>();
-        public long CurrentTimestamp { get; set; }
     }
 }

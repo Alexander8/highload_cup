@@ -42,9 +42,6 @@ namespace Travels
             var dataSource = new ArchiveDataSource();
             var data = dataSource.Read("/tmp/data/data.zip", "/tmp/data/options.txt");
 
-            DatetimeUtil.CurrentTimestamp = data.CurrentTimestamp;
-            Console.WriteLine($"CurrentTimestamp: {DatetimeUtil.CurrentTimestamp}");
-
             Storage.LoadData(data);
         }
 
