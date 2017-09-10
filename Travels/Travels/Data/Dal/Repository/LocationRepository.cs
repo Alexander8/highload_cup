@@ -27,10 +27,10 @@ namespace Travels.Data.Dal.Repository
 
             var query = location.Visits.AsEnumerable();
             if (fromDate.HasValue)
-                query = query.Where(v => v.VisitedAt > fromDate);
+                query = query.Where(v => v.VisitedAt > fromDate.Value);
 
             if (toDate.HasValue)
-                query = query.Where(v => v.VisitedAt < toDate);
+                query = query.Where(v => v.VisitedAt < toDate.Value);
 
             if (fromAge.HasValue)
                 query = query.Where(v => v.User.Age >= fromAge.Value);

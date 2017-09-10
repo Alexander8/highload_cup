@@ -12,14 +12,14 @@ namespace Travels.Server.Controller
     {
         private const string EmptyObject = "{}";
 
-        public static Tuple<int, string> Get(string url)
+        public static ValueTuple<int, string> Get(string url)
         {
             if (!ParseUtil.TryGetIdFromUrl(url, out var id))
-                return Tuple.Create(404, (string)null);
+                return ValueTuple.Create(404, (string)null);
 
             var user = UserRepository.GetUser(id);
             if (user == null)
-                return Tuple.Create(404, (string)null);
+                return ValueTuple.Create(404, (string)null);
 
             var result = new JObject
             {
@@ -31,34 +31,34 @@ namespace Travels.Server.Controller
                 ["birth_date"] = user.BirthDate
             };
 
-            return Tuple.Create(200, result.ToString());
+            return ValueTuple.Create(200, result.ToString());
         }
 
-        public static Tuple<int, string> GetVisits(string url)
+        public static ValueTuple<int, string> GetVisits(string url)
         {
             if (!ParseUtil.TryGetIdFromUrl(url, out var id))
-                return Tuple.Create(404, (string)null);
+                return ValueTuple.Create(404, (string)null);
 
             var queryString = ParseUtil.ParseQueryString(url);
 
             var fromDate = long.MinValue;
             if (queryString.ContainsKey("fromDate") && !long.TryParse(queryString["fromDate"], out fromDate))
-                return Tuple.Create(400, (string)null);
+                return ValueTuple.Create(400, (string)null);
 
             var toDate = long.MinValue;
             if (queryString.ContainsKey("toDate") && !long.TryParse(queryString["toDate"], out toDate))
-                return Tuple.Create(400, (string)null);
+                return ValueTuple.Create(400, (string)null);
 
             if (queryString.ContainsKey("country") && string.IsNullOrEmpty(queryString["country"]))
-                return Tuple.Create(400, (string)null);
+                return ValueTuple.Create(400, (string)null);
 
             var toDistance = int.MinValue;
             if (queryString.ContainsKey("toDistance") && !int.TryParse(queryString["toDistance"], out toDistance))
-                return Tuple.Create(400, (string)null);
+                return ValueTuple.Create(400, (string)null);
 
             var userExists = UserRepository.UserExists(id);
             if (!userExists)
-                return Tuple.Create(404, (string)null);
+                return ValueTuple.Create(404, (string)null);
 
             var userVisits = UserRepository.GetUserVisits(
                 id, 
@@ -72,73 +72,73 @@ namespace Travels.Server.Controller
                 visits = userVisits
             };
 
-            return Tuple.Create(200, JsonConvert.SerializeObject(result));
+            return ValueTuple.Create(200, JsonConvert.SerializeObject(result));
         }
 
-        public static Tuple<int, string> Create(string payload)
+        public static ValueTuple<int, string> Create(string payload)
         {
             var jPayload = JToken.Parse(payload);
 
             if (!ParseUtil.TryGetValueFromPayload<int>(jPayload, "id", int.TryParse, out var id))
-                return Tuple.Create(400, (string)null);
+                return ValueTuple.Create(400, (string)null);
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "email", out var email))
-                return Tuple.Create(400, (string)null);
+                return ValueTuple.Create(400, (string)null);
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "first_name", out var first_name))
-                return Tuple.Create(400, (string)null);
+                return ValueTuple.Create(400, (string)null);
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "last_name", out var last_name))
-                return Tuple.Create(400, (string)null);
+                return ValueTuple.Create(400, (string)null);
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "gender", out var gender))
-                return Tuple.Create(400, (string)null);
+                return ValueTuple.Create(400, (string)null);
 
             if (!ParseUtil.TryGetValueFromPayload<long>(jPayload, "birth_date", long.TryParse, out var birth_date))
-                return Tuple.Create(400, (string)null);
+                return ValueTuple.Create(400, (string)null);
 
             if (!IsUserValid(id, email, first_name, last_name, gender, birth_date))
-                return Tuple.Create(400, (string)null);
+                return ValueTuple.Create(400, (string)null);
 
             // ReSharper disable PossibleInvalidOperationException
             Storage.CreateUser(id.Value, email, first_name, last_name, gender, birth_date.Value);
             // ReSharper restore PossibleInvalidOperationException
 
-            return Tuple.Create(200, EmptyObject);
+            return ValueTuple.Create(200, EmptyObject);
         }
 
-        public static Tuple<int, string> Update(string url, string payload)
+        public static ValueTuple<int, string> Update(string url, string payload)
         {
             if (!ParseUtil.TryGetIdFromUrl(url, out var id))
-                return Tuple.Create(404, (string)null);
+                return ValueTuple.Create(404, (string)null);
 
             var userExists = UserRepository.UserExists(id);
             if (!userExists)
-                return Tuple.Create(404, (string)null);
+                return ValueTuple.Create(404, (string)null);
 
             var jPayload = JToken.Parse(payload);
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "email", out var email))
-                return Tuple.Create(400, (string)null);
+                return ValueTuple.Create(400, (string)null);
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "first_name", out var first_name))
-                return Tuple.Create(400, (string)null);
+                return ValueTuple.Create(400, (string)null);
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "last_name", out var last_name))
-                return Tuple.Create(400, (string)null);
+                return ValueTuple.Create(400, (string)null);
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "gender", out var gender))
-                return Tuple.Create(400, (string)null);
+                return ValueTuple.Create(400, (string)null);
 
             if (!ParseUtil.TryGetValueFromPayload<long>(jPayload, "birth_date", long.TryParse, out var birth_date))
-                return Tuple.Create(400, (string)null);
+                return ValueTuple.Create(400, (string)null);
 
             if (!IsUserToUpdateValid(email, first_name, last_name, gender, birth_date))
-                return Tuple.Create(400, (string)null);
+                return ValueTuple.Create(400, (string)null);
 
             Storage.UpdateUser(id, email, first_name, last_name, gender, birth_date);
 
-            return Tuple.Create(200, EmptyObject);
+            return ValueTuple.Create(200, EmptyObject);
         }
 
         private static bool IsUserValid(int? id, string email, string first_name, string last_name, string gender, long? birth_date)

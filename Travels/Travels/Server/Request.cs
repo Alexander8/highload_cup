@@ -20,7 +20,7 @@ namespace Travels.Server
                 var requestData = Encoding.UTF8.GetString(Body, 0, requestSize);
 
                 if (requestData.Length < 3)
-                    return PrepareResponse(Tuple.Create(400, (string)null));
+                    return PrepareResponse(ValueTuple.Create(400, (string)null));
 
                 var verb = GetVerb(requestData);
                 var url = requestData.Substring(verb.Length + 1, requestData.IndexOf(' ', verb.Length + 1) - verb.Length - 1).Trim('/');
@@ -31,12 +31,12 @@ namespace Travels.Server
                     const string bodySeparator = "\r\n\r\n";
                     var emptyLineIdx = requestData.LastIndexOf(bodySeparator);
                     if (emptyLineIdx == -1)
-                        return PrepareResponse(Tuple.Create(400, (string)null));
+                        return PrepareResponse(ValueTuple.Create(400, (string)null));
 
                     payload = requestData.Substring(emptyLineIdx + bodySeparator.Length);
 
                     if (string.IsNullOrEmpty(payload))
-                        return PrepareResponse(Tuple.Create(400, (string)null));
+                        return PrepareResponse(ValueTuple.Create(400, (string)null));
                 }
 
                 var result = Execute(verb, url, payload);
@@ -47,7 +47,7 @@ namespace Travels.Server
             catch (Exception ex)
             {
                 Console.WriteLine($"Failed to process request: {ex}");
-                return PrepareResponse(Tuple.Create(400, (string)null));
+                return PrepareResponse(ValueTuple.Create(400, (string)null));
             }
         }
 
@@ -60,25 +60,23 @@ namespace Travels.Server
             return verb;
         }
 
-        private static Tuple<int, string> Execute(string verb, string url, string payload)
+        private static ValueTuple<int, string> Execute(string verb, string url, string payload)
         {
-            Tuple<int, string> result = null;
-
             if (url.StartsWith("users"))
             {
                 if (verb == "GET")
                 {
                     if (url.Contains("/visits"))
-                        result = UserController.GetVisits(url);
+                        return UserController.GetVisits(url);
                     else
-                        result = UserController.Get(url);
+                        return UserController.Get(url);
                 }
                 else
                 {
                     if (url.Contains("/new"))
-                        result = UserController.Create(payload);
+                        return UserController.Create(payload);
                     else
-                        result = UserController.Update(url, payload);
+                        return UserController.Update(url, payload);
                 }
             }
             else if (url.StartsWith("locations"))
@@ -86,60 +84,59 @@ namespace Travels.Server
                 if (verb == "GET")
                 {
                     if (url.Contains("/avg"))
-                        result = LocationController.Avg(url);
+                        return LocationController.Avg(url);
                     else
-                        result = LocationController.Get(url);
+                        return LocationController.Get(url);
                 }
                 else
                 {
                     if (url.Contains("/new"))
-                        result = LocationController.Create(payload);
+                        return LocationController.Create(payload);
                     else
-                        result = LocationController.Update(url, payload);
+                        return LocationController.Update(url, payload);
                 }
             }
             else if (url.StartsWith("visits"))
             {
                 if (verb == "GET")
                 {
-                    result = VisitController.Get(url);
+                    return VisitController.Get(url);
                 }
                 else
                 {
                     if (url.Contains("/new"))
-                        result = VisitController.Create(payload);
+                        return VisitController.Create(payload);
                     else
-                        result = VisitController.Update(url, payload);
+                        return VisitController.Update(url, payload);
                 }
             }
 
-            return result;
+            return ValueTuple.Create(400, (string)null);
         }
 
-        private static byte[] PrepareResponse(Tuple<int, string> response)
+        private static byte[] PrepareResponse(ValueTuple<int, string> response)
         {
-            if (response == null)
-                return new byte[0];
-
-            byte[] body = null;
-            if (!string.IsNullOrEmpty(response.Item2))
-                body = Encoding.UTF8.GetBytes(response.Item2);
+            var bodyLength = string.IsNullOrEmpty(response.Item2) ? 0 : Encoding.UTF8.GetByteCount(response.Item2);
 
             var statusLine = "HTTP/1.1 " + response.Item1 + " " + HttpCodeToString(response.Item1);
 
             const string contentTypeLength = "Content-Type: application/json; charset=utf-8";
-            var contentLengthLine = "Content-Length: " + (body?.Length ?? 0);
+            var contentLengthLine = "Content-Length: " + bodyLength;
             const string serverLine = "Server: Custom";
 
-            var result = statusLine + "\r\n" + contentTypeLength + "\r\n" + serverLine + "\r\n" + contentLengthLine + "\r\n\r\n";
+            var header = statusLine + "\r\n" + contentTypeLength + "\r\n" + serverLine + "\r\n" + contentLengthLine + "\r\n\r\n";
 
-            var resultArr = Encoding.UTF8.GetBytes(result);
-            if (body == null)
-                return resultArr;
+            var resultArr = new byte[header.Length + bodyLength];
 
-            var oldLength = resultArr.Length;
-            Array.Resize(ref resultArr, resultArr.Length + body.Length);
-            Array.Copy(body, 0, resultArr, oldLength, body.Length);
+            var headerArr = Encoding.UTF8.GetBytes(header);
+
+            Array.Copy(headerArr, 0, resultArr, 0, headerArr.Length);
+
+            if (!string.IsNullOrEmpty(response.Item2))
+            {
+                var bodyArr = Encoding.UTF8.GetBytes(response.Item2);
+                Array.Copy(bodyArr, 0, resultArr, headerArr.Length, bodyArr.Length);
+            }
 
             return resultArr;
         }
