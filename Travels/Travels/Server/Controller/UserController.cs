@@ -21,17 +21,11 @@ namespace Travels.Server.Controller
             if (user == null)
                 return ValueTuple.Create(404, (string)null);
 
-            var result = new JObject
-            {
-                ["id"] = user.Id,
-                ["email"] = user.Email,
-                ["first_name"] = user.FirstName,
-                ["last_name"] = user.LastName,
-                ["gender"] = user.Gender,
-                ["birth_date"] = user.BirthDate
-            };
+            var result =
+                "{\"id\":" + user.Id + ", \"email\": \"" + user.Email + "\", \"first_name\": \"" + user.FirstName
+                + "\", \"last_name\": \"" + user.LastName + "\", \"gender\": \"" + user.Gender + "\", \"birth_date\": " + user.BirthDate + "}";
 
-            return ValueTuple.Create(200, result.ToString());
+            return ValueTuple.Create(200, result);
         }
 
         public static ValueTuple<int, string> GetVisits(string url)
@@ -67,12 +61,9 @@ namespace Travels.Server.Controller
                 queryString.ContainsKey("country") ? Uri.UnescapeDataString(queryString["country"]).Replace('+', ' ') : null,
                 toDistance == int.MinValue ? (int?)null : toDistance);
 
-            var result = new
-            {
-                visits = userVisits
-            };
+            var result = "{ \"visits\": " + JsonConvert.SerializeObject(userVisits) + "}";
 
-            return ValueTuple.Create(200, JsonConvert.SerializeObject(result));
+            return ValueTuple.Create(200, result);
         }
 
         public static ValueTuple<int, string> Create(string payload)

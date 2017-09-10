@@ -20,16 +20,11 @@ namespace Travels.Server.Controller
             if (visit == null)
                 return ValueTuple.Create(404, (string)null);
 
-            var result = new JObject
-            {
-                ["id"] = visit.Id,
-                ["location"] = visit.LocationId,
-                ["user"] = visit.UserId,
-                ["visited_at"] = visit.VisitedAt,
-                ["mark"] = visit.Mark
-            };
+            var result =
+                "{\"id\":" + visit.Id + ", \"location\": " + visit.LocationId + ", \"user\": " + visit.UserId
+                + ", \"visited_at\": " + visit.VisitedAt + ", \"mark\": " + visit.Mark + "}";
 
-            return ValueTuple.Create(200, result.ToString());
+            return ValueTuple.Create(200, result);
         }
 
         public static ValueTuple<int, string> Create(string payload)

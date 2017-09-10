@@ -7,6 +7,8 @@ namespace Travels.Data.Dal.Repository
 {
     internal static class UserRepository
     {
+        private static readonly UserVisitToLocationDto[] EmptyVisits = new UserVisitToLocationDto[0];
+
         public static User GetUser(int id)
         {
             return id < Storage.Users.Length - 1 ? Storage.Users[id] : null;
@@ -22,7 +24,7 @@ namespace Travels.Data.Dal.Repository
             var user = Storage.Users[id];
 
             if (user.Visits == null)
-                return new UserVisitToLocationDto[0];
+                return EmptyVisits;
 
             var query = user.Visits.AsEnumerable();
 
@@ -40,12 +42,7 @@ namespace Travels.Data.Dal.Repository
 
             return query
                 .OrderBy(v => v.VisitedAt)
-                .Select(v => new UserVisitToLocationDto
-                {
-                    place = v.Location.Place,
-                    mark = v.Mark,
-                    visited_at = v.VisitedAt
-                });    
+                .Select(v => new UserVisitToLocationDto(v.Mark, v.VisitedAt, v.Location.Place));    
         }
     }
 }

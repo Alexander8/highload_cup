@@ -6,6 +6,8 @@ namespace Travels.Server.Controller.Util
 {
     internal static class ParseUtil
     {
+        private static readonly Dictionary<string, string> EmptyQueryString = new Dictionary<string, string>();
+
         public delegate bool TryParseDelegate<T>(string str, out T value);
 
         public static bool TryGetIdFromUrl(string url, out int id)
@@ -33,7 +35,7 @@ namespace Travels.Server.Controller.Util
         {
             var idx = url.IndexOf('?');
             if (idx == -1 || idx == url.Length - 1)
-                return new Dictionary<string, string>();
+                return EmptyQueryString;
 
             var pairs = url.Substring(idx + 1).Split('&', StringSplitOptions.RemoveEmptyEntries);
             var result = new Dictionary<string, string>(pairs.Length);

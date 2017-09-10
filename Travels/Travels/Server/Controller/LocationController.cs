@@ -20,16 +20,11 @@ namespace Travels.Server.Controller
             if (location == null)
                 return ValueTuple.Create(404, (string)null);
 
-            var result = new JObject
-            {
-                ["id"] = location.Id,
-                ["place"] = location.Place,
-                ["country"] = location.Country,
-                ["city"] = location.City,
-                ["distance"] = location.Distance
-            };
+            var result = 
+                "{\"id\":" + location.Id + ", \"place\": \"" + location.Place + "\", \"country\": \"" + location.Country 
+                + "\", \"city\": \"" + location.City + "\", \"distance\": " + location.Distance + "}";
 
-            return ValueTuple.Create(200, result.ToString());
+            return ValueTuple.Create(200, result);
         }
 
         public static ValueTuple<int, string> Avg(string url)
