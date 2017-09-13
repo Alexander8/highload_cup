@@ -1,4 +1,8 @@
-Travels/.vs/
-Travels/Travels/bin/
-Travels/Travels/obj/
+.vs/
+bin/
+obj/
+
 /Keys/
+
+*.csproj.user
+

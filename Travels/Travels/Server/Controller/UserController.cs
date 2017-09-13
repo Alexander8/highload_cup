@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Travels.Data.Dal.Repository;
 using Travels.Data.Util;
 using Travels.Server.Controller.Util;
 using Travels.Data.Dal;
+using Travels.Data.Dto;
 
 namespace Travels.Server.Controller
 {
@@ -21,9 +25,10 @@ namespace Travels.Server.Controller
             if (user == null)
                 return ValueTuple.Create(404, (string)null);
 
-            var result =
-                "{\"id\":" + user.Id + ", \"email\": \"" + user.Email + "\", \"first_name\": \"" + user.FirstName
-                + "\", \"last_name\": \"" + user.LastName + "\", \"gender\": \"" + user.Gender + "\", \"birth_date\": " + user.BirthDate + "}";
+            var result = string.Concat(
+                "{\"id\":", user.Id, ", \"email\": \"", user.Email, "\", \"first_name\": \"", user.FirstName, 
+                "\", \"last_name\": \"", user.LastName, "\", \"gender\": \"", user.Gender, 
+                "\", \"birth_date\": ", user.BirthDate, "}");
 
             return ValueTuple.Create(200, result);
         }
@@ -61,9 +66,7 @@ namespace Travels.Server.Controller
                 queryString.ContainsKey("country") ? Uri.UnescapeDataString(queryString["country"]).Replace('+', ' ') : null,
                 toDistance == int.MinValue ? (int?)null : toDistance);
 
-            var result = "{ \"visits\": " + JsonConvert.SerializeObject(userVisits) + "}";
-
-            return ValueTuple.Create(200, result);
+            return ValueTuple.Create(200, SerializeUserVisits(userVisits));
         }
 
         public static ValueTuple<int, string> Create(string payload)
@@ -176,6 +179,43 @@ namespace Travels.Server.Controller
                 return false;
 
             return true;
+        }
+
+        private static string SerializeUserVisits(IEnumerable<UserVisitToLocationDto> userVisits)
+        {
+            var sb = new StringBuilder();
+
+            using (var sw = new StringWriter(sb))
+            using (var jw = new JsonTextWriter(sw))
+            {
+                jw.WriteStartObject();
+
+                jw.WritePropertyName("visits");
+
+                jw.WriteStartArray();
+
+                foreach (var userVisit in userVisits)
+                {
+                    jw.WriteStartObject();
+
+                    jw.WritePropertyName("mark");
+                    jw.WriteValue(userVisit.mark);
+
+                    jw.WritePropertyName("visited_at");
+                    jw.WriteValue(userVisit.visited_at);
+
+                    jw.WritePropertyName("place");
+                    jw.WriteValue(userVisit.place);
+
+                    jw.WriteEndObject();
+                }
+
+                jw.WriteEndArray();
+
+                jw.WriteEndObject();
+            }
+
+            return sb.ToString();
         }
     }
 }

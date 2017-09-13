@@ -20,9 +20,9 @@ namespace Travels.Server.Controller
             if (visit == null)
                 return ValueTuple.Create(404, (string)null);
 
-            var result =
-                "{\"id\":" + visit.Id + ", \"location\": " + visit.LocationId + ", \"user\": " + visit.UserId
-                + ", \"visited_at\": " + visit.VisitedAt + ", \"mark\": " + visit.Mark + "}";
+            var result = string.Concat(
+                "{\"id\":", visit.Id, ", \"location\": ", visit.LocationId, ", \"user\": ", visit.UserId, 
+                ", \"visited_at\": ", visit.VisitedAt, ", \"mark\": ", visit.Mark, "}");
 
             return ValueTuple.Create(200, result);
         }
