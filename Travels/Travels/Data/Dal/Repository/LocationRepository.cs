@@ -27,10 +27,10 @@ namespace Travels.Data.Dal.Repository
 
             var query = location.Visits.AsEnumerable();
             if (fromDate.HasValue)
-                query = query.Where(v => v.VisitedAt > fromDate.Value);
+                query = query.SkipWhile(v => v.VisitedAt <= fromDate.Value);
 
             if (toDate.HasValue)
-                query = query.Where(v => v.VisitedAt < toDate.Value);
+                query = query.TakeWhile(v => v.VisitedAt < toDate.Value);
 
             if (fromAge.HasValue)
                 query = query.Where(v => v.User.Age >= fromAge.Value);
@@ -42,6 +42,7 @@ namespace Travels.Data.Dal.Repository
                 query = query.Where(v => v.User.Gender == gender);         
 
             var avg = query.DefaultIfEmpty(EmptyVisit).Average(v => v.Mark);
+
             return Math.Round(avg, 5);
         }
     }

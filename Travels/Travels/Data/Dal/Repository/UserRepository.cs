@@ -29,10 +29,10 @@ namespace Travels.Data.Dal.Repository
             var query = user.Visits.AsEnumerable();
 
             if (fromDate.HasValue)
-                query = query.Where(v => v.VisitedAt > fromDate.Value);
+                query = query.SkipWhile(v => v.VisitedAt <= fromDate.Value);
 
             if (toDate.HasValue)
-                query = query.Where(v => v.VisitedAt < toDate.Value);
+                query = query.TakeWhile(v => v.VisitedAt < toDate.Value);
 
             if (country != null)
                 query = query.Where(v => v.Location.Country == country);
@@ -41,7 +41,6 @@ namespace Travels.Data.Dal.Repository
                 query = query.Where(v => v.Location.Distance < toDistance.Value);
 
             return query
-                .OrderBy(v => v.VisitedAt)
                 .Select(v => new UserVisitToLocationDto(v.Mark, v.VisitedAt, v.Location.Place));    
         }
     }

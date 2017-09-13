@@ -9,6 +9,8 @@ namespace Travels.Data.Dal
 {
     internal static class Storage
     {
+        private static readonly VisitComparer VComparer = new VisitComparer();
+
         public static User[] Users;
         public static Location[] Locations;
         public static Visit[] Visits;
@@ -47,6 +49,18 @@ namespace Travels.Data.Dal
                     v.Location.Visits = new List<Visit>();
 
                 v.Location.Visits.Add(v);
+            }
+
+            foreach (var u in Users)
+            {
+                if (u != null && u.Visits != null)
+                    u.Visits.Sort(VComparer);
+            }
+
+            foreach (var l in Locations)
+            {
+                if (l != null && l.Visits != null)
+                    l.Visits.Sort(VComparer);
             }
 
             Console.WriteLine("Data loaded to storage");
@@ -118,7 +132,7 @@ namespace Travels.Data.Dal
                 if (user.Visits == null)
                     user.Visits = new List<Visit>();
 
-                user.Visits.Add(Visits[id]);
+                InsertVisit(user.Visits, Visits[id]);
             }
 
             var location = Locations[locationId];
@@ -129,7 +143,7 @@ namespace Travels.Data.Dal
                 if (location.Visits == null)
                     location.Visits = new List<Visit>();
 
-                location.Visits.Add(Visits[id]);
+                InsertVisit(location.Visits, Visits[id]);
             }
         }
 
@@ -138,7 +152,7 @@ namespace Travels.Data.Dal
             var visit = Visits[id];
             lock (visit)
             {
-                if (locationId.HasValue)
+                if (locationId.HasValue && visit.LocationId != locationId.Value)
                 {
                     visit.LocationId = locationId.Value;
 
@@ -154,11 +168,11 @@ namespace Travels.Data.Dal
                         if (visit.Location.Visits == null)
                             visit.Location.Visits = new List<Visit>();
 
-                        visit.Location.Visits.Add(visit);
+                        InsertVisit(visit.Location.Visits, visit);
                     }
                 }
 
-                if (userId.HasValue)
+                if (userId.HasValue && visit.UserId != userId.Value)
                 {
                     visit.UserId = userId.Value;
 
@@ -174,15 +188,44 @@ namespace Travels.Data.Dal
                         if (visit.User.Visits == null)
                             visit.User.Visits = new List<Visit>();
 
-                        visit.User.Visits.Add(visit);
+                        InsertVisit(visit.User.Visits, visit);
                     }
                 }
 
                 if (visited_at.HasValue)
+                {
                     visit.VisitedAt = visited_at.Value;
+
+                    // todo: possible to improve here
+                    visit.User.Visits.Sort(VComparer);
+                    visit.Location.Visits.Sort(VComparer);
+                }
 
                 if (mark.HasValue)
                     visit.Mark = mark.Value;
+            }
+        }
+
+        private static void InsertVisit(List<Visit> visits, Visit visit)
+        {
+            // todo: binary search is possible here
+            var idx = visits.FindIndex(v => v.VisitedAt > visit.VisitedAt);
+            if (idx == -1)
+                visits.Add(visit);
+            else
+                visits.Insert(idx, visit);
+        }
+
+        private sealed class VisitComparer : IComparer<Visit>
+        {
+            public int Compare(Visit x, Visit y)
+            {
+                return 
+                    x.VisitedAt > y.VisitedAt ? 
+                    1 : 
+                    x.VisitedAt == y.VisitedAt ? 
+                        0 : 
+                        -1;
             }
         }
     }
