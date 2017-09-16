@@ -15,6 +15,7 @@ namespace Travels.Server.Controller
         private const string EmptyObject = "{}";
         private static readonly ValueTuple<int, string> BadRequest = ValueTuple.Create(400, (string)null);
         private static readonly ValueTuple<int, string> NotFound = ValueTuple.Create(404, (string)null);
+        private static readonly ValueTuple<int, string> EmptyOk = ValueTuple.Create(200, EmptyObject);
 
         public static ValueTuple<int, string> Get(string url)
         {
@@ -98,7 +99,7 @@ namespace Travels.Server.Controller
             Storage.CreateUser(id.Value, email, first_name, last_name, gender, birth_date.Value);
             // ReSharper restore PossibleInvalidOperationException
 
-            return ValueTuple.Create(200, EmptyObject);
+            return EmptyOk;
         }
 
         public static ValueTuple<int, string> Update(string url, string payload)
@@ -132,7 +133,7 @@ namespace Travels.Server.Controller
 
             Storage.UpdateUser(id, email, first_name, last_name, gender, birth_date);
 
-            return ValueTuple.Create(200, EmptyObject);
+            return EmptyOk;
         }
 
         private static bool IsUserValid(int? id, string email, string first_name, string last_name, string gender, long? birth_date)

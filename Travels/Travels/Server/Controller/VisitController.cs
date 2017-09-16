@@ -12,6 +12,7 @@ namespace Travels.Server.Controller
         private const string EmptyObject = "{}";
         private static readonly ValueTuple<int, string> BadRequest = ValueTuple.Create(400, (string)null);
         private static readonly ValueTuple<int, string> NotFound = ValueTuple.Create(404, (string)null);
+        private static readonly ValueTuple<int, string> EmptyOk = ValueTuple.Create(200, EmptyObject);
 
         public static ValueTuple<int, string> Get(string url)
         {
@@ -55,7 +56,7 @@ namespace Travels.Server.Controller
             Storage.CreateVisit(id.Value, location.Value, user.Value, visited_at.Value, mark.Value);
             // ReSharper restore PossibleInvalidOperationException
 
-            return ValueTuple.Create(200, EmptyObject);
+            return EmptyOk;
         }
 
         public static ValueTuple<int, string> Update(string url, string payload)
@@ -86,7 +87,7 @@ namespace Travels.Server.Controller
 
             Storage.UpdateVisit(id, location, user, visited_at, mark);
 
-            return ValueTuple.Create(200, EmptyObject);
+            return EmptyOk;
         }
 
         private static bool IsVisitValid(int? id, int? location, int? user, long? visited_at, int? mark)

@@ -6,6 +6,8 @@ namespace Travels.Server
 {
     internal sealed class Request
     {
+        private static readonly ValueTuple<int, string> BadRequest = ValueTuple.Create(400, (string)null);
+
         public readonly byte[] Body;
 
         public Request(byte[] body)
@@ -20,7 +22,7 @@ namespace Travels.Server
                 var requestData = Encoding.UTF8.GetString(Body, 0, requestSize);
 
                 if (requestData.Length < 3)
-                    return PrepareResponse(ValueTuple.Create(400, (string)null));
+                    return PrepareResponse(BadRequest);
 
                 var verb = GetVerb(requestData);
                 var url = requestData.Substring(verb.Length + 1, requestData.IndexOf(' ', verb.Length + 1) - verb.Length - 1).Trim('/');
@@ -31,12 +33,12 @@ namespace Travels.Server
                     const string bodySeparator = "\r\n\r\n";
                     var emptyLineIdx = requestData.LastIndexOf(bodySeparator);
                     if (emptyLineIdx == -1)
-                        return PrepareResponse(ValueTuple.Create(400, (string)null));
+                        return PrepareResponse(BadRequest);
 
                     payload = requestData.Substring(emptyLineIdx + bodySeparator.Length);
 
                     if (string.IsNullOrEmpty(payload))
-                        return PrepareResponse(ValueTuple.Create(400, (string)null));
+                        return PrepareResponse(BadRequest);
                 }
 
                 var result = Execute(verb, url, payload);
@@ -47,7 +49,7 @@ namespace Travels.Server
             catch (Exception ex)
             {
                 Console.WriteLine($"Failed to process request: {ex}");
-                return PrepareResponse(ValueTuple.Create(400, (string)null));
+                return PrepareResponse(BadRequest);
             }
         }
 
@@ -111,7 +113,7 @@ namespace Travels.Server
                 }
             }
 
-            return ValueTuple.Create(400, (string)null);
+            return BadRequest;
         }
 
         private static byte[] PrepareResponse(ValueTuple<int, string> response)

@@ -36,7 +36,8 @@ namespace Travels.Server
                 SendBufferSize = MaxBufferSize * 2,
                 ReceiveTimeout = 10,
                 SendTimeout = 10,
-                LingerState = new LingerOption(true, 0)
+                LingerState = new LingerOption(true, 0),
+                UseOnlyOverlappedIO = true
             };
 #else
             IpEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, port);
@@ -48,7 +49,8 @@ namespace Travels.Server
                 SendBufferSize = MaxBufferSize * 2,
                 ReceiveTimeout = 10,
                 SendTimeout = 10,
-                LingerState = new LingerOption(true, 0)
+                LingerState = new LingerOption(true, 0),
+                UseOnlyOverlappedIO = true
             };
 #endif
             ServerSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
