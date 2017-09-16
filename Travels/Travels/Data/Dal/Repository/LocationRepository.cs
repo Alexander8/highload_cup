@@ -43,7 +43,7 @@ namespace Travels.Data.Dal.Repository
 
             var avg = query.DefaultIfEmpty(EmptyVisit).Average(v => v.Mark);
 
-            return Math.Round(avg, 5);
+            return Math.Round(avg, 5, MidpointRounding.AwayFromZero);
         }
     }
 }

@@ -10,15 +10,17 @@ namespace Travels.Server.Controller
     public static class VisitController
     {
         private const string EmptyObject = "{}";
+        private static readonly ValueTuple<int, string> BadRequest = ValueTuple.Create(400, (string)null);
+        private static readonly ValueTuple<int, string> NotFound = ValueTuple.Create(404, (string)null);
 
         public static ValueTuple<int, string> Get(string url)
         {
             if (!ParseUtil.TryGetIdFromUrl(url, out var id))
-                return ValueTuple.Create(404, (string)null);
+                return NotFound;
 
             var visit = VisitRepository.GetVisit(id);
             if (visit == null)
-                return ValueTuple.Create(404, (string)null);
+                return NotFound;
 
             var result = string.Concat(
                 "{\"id\":", visit.Id, ", \"location\": ", visit.LocationId, ", \"user\": ", visit.UserId, 
@@ -32,22 +34,22 @@ namespace Travels.Server.Controller
             var jPayload = JToken.Parse(payload);
 
             if (!ParseUtil.TryGetValueFromPayload<int>(jPayload, "id", int.TryParse, out var id))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetValueFromPayload<int>(jPayload, "location", int.TryParse, out var location))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetValueFromPayload<int>(jPayload, "user", int.TryParse, out var user))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetValueFromPayload<long>(jPayload, "visited_at", long.TryParse, out var visited_at))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetValueFromPayload<int>(jPayload, "mark", int.TryParse, out var mark))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!IsVisitValid(id, location, user, visited_at, mark))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             // ReSharper disable PossibleInvalidOperationException
             Storage.CreateVisit(id.Value, location.Value, user.Value, visited_at.Value, mark.Value);
@@ -59,28 +61,28 @@ namespace Travels.Server.Controller
         public static ValueTuple<int, string> Update(string url, string payload)
         {
             if (!ParseUtil.TryGetIdFromUrl(url, out var id))
-                return ValueTuple.Create(404, (string)null);
+                return NotFound;
 
             var visitExists = VisitRepository.VisitExists(id);
             if (!visitExists)
-                return ValueTuple.Create(404, (string)null);
+                return NotFound;
 
             var jPayload = JToken.Parse(payload);
 
             if (!ParseUtil.TryGetValueFromPayload<int>(jPayload, "location", int.TryParse, out var location))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetValueFromPayload<int>(jPayload, "user", int.TryParse, out var user))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetValueFromPayload<long>(jPayload, "visited_at", long.TryParse, out var visited_at))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetValueFromPayload<int>(jPayload, "mark", int.TryParse, out var mark))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!IsVisitToUpdateValid(location, user, visited_at, mark))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             Storage.UpdateVisit(id, location, user, visited_at, mark);
 

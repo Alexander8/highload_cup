@@ -10,15 +10,17 @@ namespace Travels.Server.Controller
     public sealed class LocationController
     {
         private const string EmptyObject = "{}";
+        private static readonly ValueTuple<int, string> BadRequest = ValueTuple.Create(400, (string)null);
+        private static readonly ValueTuple<int, string> NotFound = ValueTuple.Create(404, (string)null);
 
         public static ValueTuple<int, string> Get(string url)
         {
             if (!ParseUtil.TryGetIdFromUrl(url, out var id))
-                return ValueTuple.Create(404, (string)null);
+                return NotFound;
 
             var location = LocationRepository.GetLocation(id);
             if (location == null)
-                return ValueTuple.Create(404, (string)null);
+                return NotFound;
 
             var result = string.Concat(
                 "{\"id\":", location.Id, ", \"place\": \"", location.Place, "\", ",
@@ -31,32 +33,32 @@ namespace Travels.Server.Controller
         public static ValueTuple<int, string> Avg(string url)
         {
             if (!ParseUtil.TryGetIdFromUrl(url, out var id))
-                return ValueTuple.Create(404, (string)null);
+                return NotFound;
 
             var queryString = ParseUtil.ParseQueryString(url);
 
             var fromDate = long.MinValue;
             if (queryString.ContainsKey("fromDate") && !long.TryParse(queryString["fromDate"], out fromDate))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             var toDate = long.MinValue;
             if (queryString.ContainsKey("toDate") && !long.TryParse(queryString["toDate"], out toDate))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             var fromAge = int.MinValue;
             if (queryString.ContainsKey("fromAge") && !int.TryParse(queryString["fromAge"], out fromAge))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             var toAge = int.MinValue;
             if (queryString.ContainsKey("toAge") && !int.TryParse(queryString["toAge"], out toAge))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (queryString.ContainsKey("gender") && !ValidationUtil.IsGenderValid(queryString["gender"]))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             var locationExists = LocationRepository.LocationExists(id);
             if (!locationExists)
-                return ValueTuple.Create(404, (string)null);
+                return NotFound;
 
             var averageMark = LocationRepository.GetAverageLocationMark(
                 id,
@@ -76,22 +78,22 @@ namespace Travels.Server.Controller
             var jPayload = JToken.Parse(payload);
 
             if (!ParseUtil.TryGetValueFromPayload<int>(jPayload, "id", int.TryParse, out var id))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "place", out var place))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "city", out var city))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "country", out var country))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetValueFromPayload<int>(jPayload, "distance", int.TryParse, out var distance))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!IsLocationValid(id, place, city, country, distance))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             // ReSharper disable PossibleInvalidOperationException
             Storage.CreateLocation(id.Value, place, country, city, distance.Value);
@@ -103,28 +105,28 @@ namespace Travels.Server.Controller
         public static ValueTuple<int, string> Update(string url, string payload)
         {
             if (!ParseUtil.TryGetIdFromUrl(url, out var id))
-                return ValueTuple.Create(404, (string)null);
+                return NotFound;
 
             var locationExists = LocationRepository.LocationExists(id);
             if (!locationExists)
-                return ValueTuple.Create(404, (string)null);
+                return NotFound;
 
             var jPayload = JToken.Parse(payload);
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "place", out var place))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "city", out var city))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "country", out var country))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetValueFromPayload<int>(jPayload, "distance", int.TryParse, out var distance))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!IsLocationToUpdateValid(place, city, country, distance))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             Storage.UpdateLocation(id, place, city, country, distance);
 

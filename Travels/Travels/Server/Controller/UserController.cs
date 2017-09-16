@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Travels.Data.Dal.Repository;
 using Travels.Data.Util;
@@ -15,15 +13,17 @@ namespace Travels.Server.Controller
     internal static class UserController
     {
         private const string EmptyObject = "{}";
+        private static readonly ValueTuple<int, string> BadRequest = ValueTuple.Create(400, (string)null);
+        private static readonly ValueTuple<int, string> NotFound = ValueTuple.Create(404, (string)null);
 
         public static ValueTuple<int, string> Get(string url)
         {
             if (!ParseUtil.TryGetIdFromUrl(url, out var id))
-                return ValueTuple.Create(404, (string)null);
+                return NotFound;
 
             var user = UserRepository.GetUser(id);
             if (user == null)
-                return ValueTuple.Create(404, (string)null);
+                return NotFound;
 
             var result = string.Concat(
                 "{\"id\":", user.Id, ", \"email\": \"", user.Email, "\", \"first_name\": \"", user.FirstName, 
@@ -36,28 +36,28 @@ namespace Travels.Server.Controller
         public static ValueTuple<int, string> GetVisits(string url)
         {
             if (!ParseUtil.TryGetIdFromUrl(url, out var id))
-                return ValueTuple.Create(404, (string)null);
+                return NotFound;
 
             var queryString = ParseUtil.ParseQueryString(url);
 
             var fromDate = long.MinValue;
             if (queryString.ContainsKey("fromDate") && !long.TryParse(queryString["fromDate"], out fromDate))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             var toDate = long.MinValue;
             if (queryString.ContainsKey("toDate") && !long.TryParse(queryString["toDate"], out toDate))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (queryString.ContainsKey("country") && string.IsNullOrEmpty(queryString["country"]))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             var toDistance = int.MinValue;
             if (queryString.ContainsKey("toDistance") && !int.TryParse(queryString["toDistance"], out toDistance))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             var userExists = UserRepository.UserExists(id);
             if (!userExists)
-                return ValueTuple.Create(404, (string)null);
+                return NotFound;
 
             var userVisits = UserRepository.GetUserVisits(
                 id, 
@@ -74,25 +74,25 @@ namespace Travels.Server.Controller
             var jPayload = JToken.Parse(payload);
 
             if (!ParseUtil.TryGetValueFromPayload<int>(jPayload, "id", int.TryParse, out var id))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "email", out var email))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "first_name", out var first_name))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "last_name", out var last_name))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "gender", out var gender))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetValueFromPayload<long>(jPayload, "birth_date", long.TryParse, out var birth_date))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!IsUserValid(id, email, first_name, last_name, gender, birth_date))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             // ReSharper disable PossibleInvalidOperationException
             Storage.CreateUser(id.Value, email, first_name, last_name, gender, birth_date.Value);
@@ -104,31 +104,31 @@ namespace Travels.Server.Controller
         public static ValueTuple<int, string> Update(string url, string payload)
         {
             if (!ParseUtil.TryGetIdFromUrl(url, out var id))
-                return ValueTuple.Create(404, (string)null);
+                return NotFound;
 
             var userExists = UserRepository.UserExists(id);
             if (!userExists)
-                return ValueTuple.Create(404, (string)null);
+                return NotFound;
 
             var jPayload = JToken.Parse(payload);
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "email", out var email))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "first_name", out var first_name))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "last_name", out var last_name))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetStringValueFromPayload(jPayload, "gender", out var gender))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!ParseUtil.TryGetValueFromPayload<long>(jPayload, "birth_date", long.TryParse, out var birth_date))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             if (!IsUserToUpdateValid(email, first_name, last_name, gender, birth_date))
-                return ValueTuple.Create(400, (string)null);
+                return BadRequest;
 
             Storage.UpdateUser(id, email, first_name, last_name, gender, birth_date);
 
@@ -183,37 +183,19 @@ namespace Travels.Server.Controller
 
         private static string SerializeUserVisits(IEnumerable<UserVisitToLocationDto> userVisits)
         {
-            var sb = new StringBuilder();
+            var sb = new StringBuilder(80 * 10);
 
-            using (var sw = new StringWriter(sb))
-            using (var jw = new JsonTextWriter(sw))
-            {
-                jw.WriteStartObject();
+            sb.Append("{\"visits\":[");
 
-                jw.WritePropertyName("visits");
+            var initialLength = sb.Length;
 
-                jw.WriteStartArray();
+            foreach (var userVisit in userVisits)
+                sb.Append(string.Concat("{\"mark\":", userVisit.mark, ",\"visited_at\":", userVisit.visited_at, ",\"place\":\"", userVisit.place, "\"},"));
 
-                foreach (var userVisit in userVisits)
-                {
-                    jw.WriteStartObject();
+            if (initialLength < sb.Length)
+                sb.Remove(sb.Length - 1, 1);
 
-                    jw.WritePropertyName("mark");
-                    jw.WriteValue(userVisit.mark);
-
-                    jw.WritePropertyName("visited_at");
-                    jw.WriteValue(userVisit.visited_at);
-
-                    jw.WritePropertyName("place");
-                    jw.WriteValue(userVisit.place);
-
-                    jw.WriteEndObject();
-                }
-
-                jw.WriteEndArray();
-
-                jw.WriteEndObject();
-            }
+            sb.Append("]}");
 
             return sb.ToString();
         }
